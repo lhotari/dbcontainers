@@ -1,0 +1,58 @@
+apply plugin: 'maven-publish'
+
+task sourceJar(type: Jar, dependsOn: classes) {
+    classifier 'sources'
+    from sourceSets.main.allSource
+}
+
+ext {
+    pomDependencyHelper = new PomDependencyHelper(configuration: project.configurations.runtimeClasspath)
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) { publication ->
+            from components.java
+            artifact sourceJar
+            pom.withXml {
+                // replace dependencyManagement with actual dependency versions
+                pomDependencyHelper.replaceDependencyManagement it.asNode()
+            }
+        }
+    }
+}
+
+// helper class for customizing the pom for publishing
+// helps removing the dependencyManagement element and adding the version elements to each dependency
+class PomDependencyHelper {
+    def configuration
+    @Lazy
+    Map<String, String> dependencyVersions = {
+        configuration.resolvedConfiguration.lenientConfiguration.allModuleDependencies.collectEntries {
+            ["${it.moduleGroup}:${it.moduleName}".toString(), it.moduleVersion]
+        }
+    }()
+
+    void replaceDependencyManagement(Node pomXml) {
+        pomXml.with {
+            // remove any dependencyManagement elements from the pom
+            it.remove(it.dependencyManagement)
+
+            // process dependencies in pom.xml
+            it.dependencies.dependency.each {
+                // add version if it's missing
+                if (!it.version || !it.version[0].text()) {
+                    def groupAndName = "${it.groupId.text()}:${it.artifactId.text()}".toString()
+                    def versionNumber = getDependencyVersions().get(groupAndName)
+                    if (versionNumber) {
+                        if (it.version) {
+                            it.version[0].setValue versionNumber
+                        } else {
+                            it.appendNode('version', versionNumber)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,6 @@
+rootProject.name = 'dbcontainers'
+include 'dbcontainer-yugabyte'
+include 'dbcontainer-postgres'
+include 'dbcontainer-spring'
+include 'dbcontainer-core'
+include 'sample-spring-boot-app'

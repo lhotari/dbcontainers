@@ -1,0 +1,10 @@
+plugins {
+    id 'java-library'
+}
+
+apply from: "$rootDir/gradle/publishing.gradle"
+
+dependencies {
+    api project(':dbcontainer-core')
+    api 'org.testcontainers:testcontainers'
+}

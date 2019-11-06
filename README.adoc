@@ -1,0 +1,137 @@
+= DbContainers - opinionated way to integrate TestContainers to Spring Boot integration tests
+
+== Supported databases
+
+- Postgres
+- YugaByte
+
+== What it does
+
+Provides a Spring ApplicationContextInitializer that starts a database container with https://www.testcontainers.org/[TestContainers].
+Besides this it adds properties to the Spring configuration that are used by the Spring Boot autoconfigurer classes for initializing JDBC DataSource or R2DBC ConnectionFactory.
+
+* spring.datasource.url
+* spring.datasource.username
+* spring.datasource.password
+* spring.r2dbc.url
+* spring.r2dbc.username
+* spring.r2dbc.password
+
+== Usage
+
+=== Adding dependency in Gradle
+
+```
+repositories {
+    maven {
+        url 'https://jitpack.io'
+        content {
+            // limits using the jitpack repository for specific artifacts
+            includeGroup 'com.github.lhotari.dbcontainers'
+        }
+    }
+}
+
+dependencies {
+    testImplementation 'com.github.lhotari.dbcontainers:dbcontainer-spring:master-SNAPSHOT'
+}
+```
+
+=== Adding dependency in Maven
+
+```
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+```
+
+```
+<dependency>
+    <groupId>com.github.lhotari.dbcontainers</groupId>
+    <artifactId>dbcontainer-spring</artifactId>
+    <version>master-SNAPSHOT</version>
+    <scope>test</scope>
+</dependency>
+```
+
+=== Usage In Spring Boot tests
+
+Add the `com.github.lhotari.spring.dbcontainers.YugaByteSpringTestContextInitializer` class to the initializers of the Spring Boot test class by adding a ContextConfiguration annotation:
+
+```
+@ContextConfiguration(initializers = com.github.lhotari.spring.dbcontainers.YugaByteSpringTestContextInitializer.class)
+```
+
+Full example of using JDBC and R2DBC, part of the `sample-spring-boot-app` sample:
+
+```java
+import com.github.lhotari.spring.dbcontainers.YugaByteSpringTestContextInitializer;
+import io.r2dbc.postgresql.codec.Json;
+import org.junit.jupiter.api.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.r2dbc.core.DatabaseClient;
+import org.springframework.data.r2dbc.mapping.SettableValue;
+import org.springframework.jdbc.core.JdbcOperations;
+import org.springframework.test.context.ContextConfiguration;
+import reactor.test.StepVerifier;
+
+@SpringBootTest(classes = UsageSampleTest.TestApplication.class)
+@ContextConfiguration(initializers = YugaByteSpringTestContextInitializer.class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+class UsageSampleTest {
+    @SpringBootApplication
+    static class TestApplication {
+
+    }
+
+    @Autowired
+    JdbcOperations jdbcOperations;
+
+    @Autowired
+    DatabaseClient databaseClient;
+
+    @BeforeAll
+    void createTable() {
+        jdbcOperations.execute("DROP TABLE IF EXISTS my_table");
+        jdbcOperations.execute("CREATE TABLE my_table (my_json JSON)");
+    }
+
+    @Test
+    void shouldSupportJsonType() {
+        databaseClient.insert().into("my_table")
+                .value("my_json", SettableValue.from(Json.of("{\"hello\": \"world\"}")))
+                .fetch().rowsUpdated()
+                .as(StepVerifier::create)
+                .expectNext(1)
+                .verifyComplete();
+
+        databaseClient.execute("select * from my_table")
+                .fetch()
+                .first()
+                .map(it -> ((Json) it.get("my_json")).asString())
+                .as(StepVerifier::create)
+                .expectNext("{\"hello\": \"world\"}")
+                .verifyComplete();
+    }
+}
+```
+
+
+=== Usage in a standalone application (for demos)
+
+The initializer can be added by modifying the main method of the Spring Boot Application class. Example from the sample-spring-boot-app:
+```java
+public static void main(String[] args) {
+SpringApplication springApplication = new SpringApplication(DemoApplication.class);
+// Use an embedded YugaByte database controlled by Testcontainers
+springApplication.addInitializers(new YugaByteSpringTestContextInitializer());
+springApplication.setDefaultProperties(Collections.singletonMap("spring.r2dbc.initialization-mode", "always"));
+springApplication.run(args);
+}
+```
+
