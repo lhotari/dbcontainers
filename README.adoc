@@ -19,6 +19,8 @@ Besides this it adds properties to the Spring configuration that are used by the
 
 == Usage
 
+This library is available via Jitpack. The repository information is at https://jitpack.io/#lhotari/dbcontainers .
+
 === Adding dependency in Gradle
 
 ```
@@ -33,7 +35,7 @@ repositories {
 }
 
 dependencies {
-    testImplementation 'com.github.lhotari.dbcontainers:dbcontainer-spring:master-SNAPSHOT'
+    testImplementation 'com.github.lhotari.dbcontainers:dbcontainer-spring:0.1.0'
 }
 ```
 
@@ -52,7 +54,7 @@ dependencies {
 <dependency>
     <groupId>com.github.lhotari.dbcontainers</groupId>
     <artifactId>dbcontainer-spring</artifactId>
-    <version>master-SNAPSHOT</version>
+    <version>0.1.0</version>
     <scope>test</scope>
 </dependency>
 ```
