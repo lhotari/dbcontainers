@@ -1,8 +1,8 @@
 apply plugin: 'maven-publish'
 
-task sourceJar(type: Jar, dependsOn: classes) {
-    classifier 'sources'
-    from sourceSets.main.allSource
+java {
+    withJavadocJar()
+    withSourcesJar()
 }
 
 ext {
@@ -13,7 +13,6 @@ publishing {
     publications {
         maven(MavenPublication) { publication ->
             from components.java
-            artifact sourceJar
             pom.withXml {
                 // replace dependencyManagement with actual dependency versions
                 pomDependencyHelper.replaceDependencyManagement it.asNode()

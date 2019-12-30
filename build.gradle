@@ -1,5 +1,5 @@
 plugins {
-    id 'org.springframework.boot' version '2.2.0.RELEASE' apply false
+    id 'org.springframework.boot' version '2.2.2.RELEASE' apply false
     id 'io.spring.dependency-management' version '1.0.8.RELEASE' apply false
 }
 
@@ -8,7 +8,7 @@ subprojects {
     apply plugin: 'io.spring.dependency-management'
 
     group = 'com.github.lhotari.dbcontainers'
-    version = '0.0.1-SNAPSHOT'
+    version = '0.1.1-SNAPSHOT'
     sourceCompatibility = '8'
 
     repositories {
@@ -19,7 +19,7 @@ subprojects {
     dependencyManagement {
         imports {
             mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
-            mavenBom 'org.testcontainers:testcontainers-bom:1.12.3'
+            mavenBom 'org.testcontainers:testcontainers-bom:1.12.4'
         }
     }
 
