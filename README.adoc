@@ -35,7 +35,7 @@ repositories {
 }
 
 dependencies {
-    testImplementation 'com.github.lhotari.dbcontainers:dbcontainer-spring:0.1.1'
+    testImplementation 'com.github.lhotari.dbcontainers:dbcontainer-spring:0.1.2'
 }
 ```
 
@@ -54,7 +54,7 @@ dependencies {
 <dependency>
     <groupId>com.github.lhotari.dbcontainers</groupId>
     <artifactId>dbcontainer-spring</artifactId>
-    <version>0.1.1</version>
+    <version>0.1.2</version>
     <scope>test</scope>
 </dependency>
 ```

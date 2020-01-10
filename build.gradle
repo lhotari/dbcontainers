@@ -8,7 +8,7 @@ subprojects {
     apply plugin: 'io.spring.dependency-management'
 
     group = 'com.github.lhotari.dbcontainers'
-    version = '0.1.1-SNAPSHOT'
+    version = '0.1.2-SNAPSHOT'
     sourceCompatibility = '8'
 
     repositories {
