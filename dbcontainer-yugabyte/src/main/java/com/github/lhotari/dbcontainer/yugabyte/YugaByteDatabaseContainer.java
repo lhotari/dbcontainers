@@ -4,8 +4,7 @@ import com.github.lhotari.dbcontainer.DatabaseContainer;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class YugaByteDatabaseContainer implements DatabaseContainer {
@@ -15,20 +14,20 @@ public class YugaByteDatabaseContainer implements DatabaseContainer {
     private static final String YSQL_DATABASE_NAME = "postgres";
     private static final String YSQL_DATABASE_USER = "postgres";
     private static final String YSQL_DATABASE_PASSWORD = "";
-    private static final String[] DEFAULT_MASTER_COMMAND = {"/home/yugabyte/bin/yb-master",
+    private static final List<String> DEFAULT_MASTER_COMMAND = Collections.unmodifiableList(Arrays.asList("/home/yugabyte/bin/yb-master",
             "--fs_data_dirs=/mnt/disk0,/mnt/disk1",
             "--master_addresses=yb-master-test:7100",
             "--replication_factor=1",
             "--enable_ysql=true",
             "--callhome_enabled=false",
-            "--logtostderr"};
-    private static final String[] DEFAULT_TSERVER_COMMAND = {"/home/yugabyte/bin/yb-tserver",
+            "--logtostderr"));
+    private static final List<String> DEFAULT_TSERVER_COMMAND = Collections.unmodifiableList(Arrays.asList("/home/yugabyte/bin/yb-tserver",
             "--fs_data_dirs=/mnt/disk0,/mnt/disk1",
             "--start_pgsql_proxy",
             "--pgsql_proxy_bind_address=yb-tserver-test:5433",
             "--tserver_master_addrs=yb-master-test:7100",
             "--callhome_enabled=false",
-            "--logtostderr"};
+            "--logtostderr"));
     private static final String MASTER_NW_ALIAS = "yb-master-test";
     private static final String TSERVER_NW_ALIAS = "yb-tserver-test";
     private GenericContainer<?> ymasterContainer;
@@ -51,12 +50,12 @@ public class YugaByteDatabaseContainer implements DatabaseContainer {
         if (initialized.compareAndSet(false, true)) {
             network = Network.newNetwork();
             ymasterContainer = new GenericContainer<>(dockerImageName)
-                    .withCommand(customizeMasterCommand(Arrays.asList(DEFAULT_MASTER_COMMAND)).toArray(new String[0]))
+                    .withCommand(customizeMasterCommand(new ArrayList<>(DEFAULT_MASTER_COMMAND)).toArray(new String[0]))
                     .withExposedPorts(7100)
                     .withNetwork(network)
                     .withNetworkAliases(MASTER_NW_ALIAS);
             tserverContainer = new GenericContainer<>(dockerImageName)
-                    .withCommand(customizeTserverCommand(Arrays.asList(DEFAULT_TSERVER_COMMAND)).toArray(new String[0]))
+                    .withCommand(customizeTserverCommand(new ArrayList<>(DEFAULT_TSERVER_COMMAND)).toArray(new String[0]))
                     .withExposedPorts(YSQL_SERVICE_PORT, YCQL_SERVICE_PORT, 9000)
                     .withNetwork(network)
                     .withNetworkAliases(TSERVER_NW_ALIAS)
