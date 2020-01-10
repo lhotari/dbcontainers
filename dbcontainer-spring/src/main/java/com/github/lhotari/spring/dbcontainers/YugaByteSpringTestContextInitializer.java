@@ -7,8 +7,6 @@ import org.springframework.core.env.ConfigurableEnvironment;
 public class YugaByteSpringTestContextInitializer extends DatabaseContainerInitializingSpringTestContextInitializer {
     @Override
     protected DatabaseContainer createDatabaseContainer(ConfigurableEnvironment environment) {
-        YugaByteDatabaseContainer yugaByteDatabaseContainer = new YugaByteDatabaseContainer();
-        yugaByteDatabaseContainer.start();
-        return yugaByteDatabaseContainer;
+        return new YugaByteDatabaseContainer();
     }
 }

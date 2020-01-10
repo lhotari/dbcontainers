@@ -7,8 +7,6 @@ import org.springframework.core.env.ConfigurableEnvironment;
 public class PostgresSpringTestContextInitializer extends DatabaseContainerInitializingSpringTestContextInitializer {
     @Override
     protected DatabaseContainer createDatabaseContainer(ConfigurableEnvironment environment) {
-        PostgresDatabaseContainer databaseContainer = new PostgresDatabaseContainer();
-        databaseContainer.start();
-        return databaseContainer;
+        return new PostgresDatabaseContainer();
     }
 }

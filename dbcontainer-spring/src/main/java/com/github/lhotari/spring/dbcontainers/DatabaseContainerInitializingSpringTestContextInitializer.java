@@ -13,6 +13,7 @@ abstract public class DatabaseContainerInitializingSpringTestContextInitializer 
     @Override
     public void initialize(ConfigurableApplicationContext applicationContext) {
         DatabaseContainer databaseContainer = createDatabaseContainer(applicationContext.getEnvironment());
+        databaseContainer.start();
         applicationContext.addApplicationListener(new ApplicationListener<ContextClosedEvent>() {
             @Override
             public void onApplicationEvent(ContextClosedEvent event) {
