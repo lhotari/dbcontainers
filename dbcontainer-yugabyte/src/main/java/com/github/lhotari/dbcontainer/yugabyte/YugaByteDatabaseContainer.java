@@ -65,13 +65,19 @@ public class YugaByteDatabaseContainer implements DatabaseContainer {
             try {
                 ymasterContainer.start();
                 tserverContainer.start();
-            } catch (RuntimeException e) {
+            } catch (Throwable t) {
                 ymasterContainer.stop();
                 tserverContainer.stop();
                 network.close();
-                throw e;
+                sneakyThrow(t);
             }
         }
+    }
+
+    // used to re-throw original exception instead of needing to wrap it with RuntimeException
+    @SuppressWarnings("unchecked")
+    private static <E extends Throwable> void sneakyThrow(Throwable e) throws E {
+        throw (E) e;
     }
 
     /**
