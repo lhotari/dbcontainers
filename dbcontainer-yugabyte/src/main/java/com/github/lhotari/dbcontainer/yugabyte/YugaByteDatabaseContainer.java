@@ -4,6 +4,8 @@ import com.github.lhotari.dbcontainer.DatabaseContainer;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class YugaByteDatabaseContainer implements DatabaseContainer {
@@ -13,8 +15,24 @@ public class YugaByteDatabaseContainer implements DatabaseContainer {
     private static final String YSQL_DATABASE_NAME = "postgres";
     private static final String YSQL_DATABASE_USER = "postgres";
     private static final String YSQL_DATABASE_PASSWORD = "";
+    private static final String[] DEFAULT_MASTER_COMMAND = {"/home/yugabyte/bin/yb-master",
+            "--fs_data_dirs=/mnt/disk0,/mnt/disk1",
+            "--master_addresses=yb-master-test:7100",
+            "--replication_factor=1",
+            "--enable_ysql=true",
+            "--callhome_enabled=false",
+            "--logtostderr"};
+    private static final String[] DEFAULT_TSERVER_COMMAND = {"/home/yugabyte/bin/yb-tserver",
+            "--fs_data_dirs=/mnt/disk0,/mnt/disk1",
+            "--start_pgsql_proxy",
+            "--pgsql_proxy_bind_address=yb-tserver-test:5433",
+            "--tserver_master_addrs=yb-master-test:7100",
+            "--callhome_enabled=false",
+            "--logtostderr"};
+    private static final String MASTER_NW_ALIAS = "yb-master-test";
+    private static final String TSERVER_NW_ALIAS = "yb-tserver-test";
     private GenericContainer<?> ymasterContainer;
-    private GenericContainer<?> tmasterContainer;
+    private GenericContainer<?> tserverContainer;
     private Network network;
     private final AtomicBoolean initialized = new AtomicBoolean();
     private String dockerImageName;
@@ -33,45 +51,64 @@ public class YugaByteDatabaseContainer implements DatabaseContainer {
         if (initialized.compareAndSet(false, true)) {
             network = Network.newNetwork();
             ymasterContainer = new GenericContainer<>(dockerImageName)
-                    .withCommand("/home/yugabyte/bin/yb-master",
-                            "--fs_data_dirs=/mnt/disk0,/mnt/disk1",
-                            "--master_addresses=yb-master-test:7100",
-                            "--replication_factor=1",
-                            "--enable_ysql=true",
-                            "--callhome_enabled=false",
-                            "--logtostderr")
+                    .withCommand(customizeMasterCommand(Arrays.asList(DEFAULT_MASTER_COMMAND)).toArray(new String[0]))
                     .withExposedPorts(7100)
                     .withNetwork(network)
-                    .withNetworkAliases("yb-master-test");
-            tmasterContainer = new GenericContainer<>(dockerImageName)
-                    .withCommand("/home/yugabyte/bin/yb-tserver",
-                            "--fs_data_dirs=/mnt/disk0,/mnt/disk1",
-                            "--start_pgsql_proxy",
-                            "--pgsql_proxy_bind_address=yb-tserver-test:5433",
-                            "--tserver_master_addrs=yb-master-test:7100",
-                            "--callhome_enabled=false",
-                            "--logtostderr")
+                    .withNetworkAliases(MASTER_NW_ALIAS);
+            tserverContainer = new GenericContainer<>(dockerImageName)
+                    .withCommand(customizeTserverCommand(Arrays.asList(DEFAULT_TSERVER_COMMAND)).toArray(new String[0]))
                     .withExposedPorts(YSQL_SERVICE_PORT, YCQL_SERVICE_PORT, 9000)
                     .withNetwork(network)
-                    .withNetworkAliases("yb-tserver-test")
+                    .withNetworkAliases(TSERVER_NW_ALIAS)
                     .dependsOn(ymasterContainer);
+            customizeContainers(ymasterContainer, tserverContainer);
             try {
                 ymasterContainer.start();
-                tmasterContainer.start();
+                tserverContainer.start();
             } catch (RuntimeException e) {
                 ymasterContainer.stop();
-                tmasterContainer.stop();
+                tserverContainer.stop();
                 network.close();
                 throw e;
             }
         }
     }
 
+    /**
+     * Customizes the YB master container's command in a subclass
+     *
+     * @param command the default command parts to use for the container
+     * @return modified command parts
+     */
+    protected List<String> customizeMasterCommand(List<String> command) {
+        return command;
+    }
+
+    /**
+     * Customizes the YB tserver container's command in a subclass
+     *
+     * @param command the default command parts to use for the container
+     * @return modified command parts
+     */
+    protected List<String> customizeTserverCommand(List<String> command) {
+        return command;
+    }
+
+    /**
+     * Customizes YB ymaster and tserver containers before starting the containers
+     *
+     * @param ymasterContainer the YB master container
+     * @param tserverContainer the YB tserver container
+     */
+    protected void customizeContainers(GenericContainer<?> ymasterContainer, GenericContainer<?> tserverContainer) {
+
+    }
+
     @Override
     public synchronized void stop() {
         if (initialized.compareAndSet(true, false)) {
-            tmasterContainer.stop();
-            tmasterContainer = null;
+            tserverContainer.stop();
+            tserverContainer = null;
             ymasterContainer.stop();
             ymasterContainer = null;
             network.close();
@@ -80,19 +117,19 @@ public class YugaByteDatabaseContainer implements DatabaseContainer {
     }
 
     public String getYCQLHost() {
-        return tmasterContainer.getContainerIpAddress();
+        return tserverContainer.getContainerIpAddress();
     }
 
     public int getYCQLPort() {
-        return tmasterContainer.getMappedPort(YCQL_SERVICE_PORT);
+        return tserverContainer.getMappedPort(YCQL_SERVICE_PORT);
     }
 
     public String getYSQLHost() {
-        return tmasterContainer.getContainerIpAddress();
+        return tserverContainer.getContainerIpAddress();
     }
 
     public int getYSQLPort() {
-        return tmasterContainer.getMappedPort(YSQL_SERVICE_PORT);
+        return tserverContainer.getMappedPort(YSQL_SERVICE_PORT);
     }
 
     public String getJdbcUrl() {
