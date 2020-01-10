@@ -9,7 +9,7 @@ import org.springframework.core.env.MapPropertySource;
 import java.util.HashMap;
 import java.util.Map;
 
-abstract class DatabaseContainerInitializingSpringTestContextInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
+abstract public class DatabaseContainerInitializingSpringTestContextInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
     @Override
     public void initialize(ConfigurableApplicationContext applicationContext) {
         DatabaseContainer databaseContainer = createDatabaseContainer(applicationContext.getEnvironment());
