@@ -17,12 +17,6 @@ publishing {
                     fromResolutionResult()
                 }
             }
-            pom.withXml { pomXml ->
-                pomXml.asNode().with {
-                    // remove dependencyManagement element from the pom
-                    it.remove(it.dependencyManagement)
-                }
-            }
         }
     }
 }
