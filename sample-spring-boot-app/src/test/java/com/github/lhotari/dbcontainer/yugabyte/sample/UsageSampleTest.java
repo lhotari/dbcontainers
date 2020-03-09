@@ -10,6 +10,9 @@ import org.springframework.data.r2dbc.core.DatabaseClient;
 import org.springframework.data.r2dbc.mapping.SettableValue;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 import reactor.test.StepVerifier;
 
 @SpringBootTest(classes = UsageSampleTest.TestApplication.class)
@@ -22,6 +25,9 @@ class UsageSampleTest {
     }
 
     @Autowired
+    PlatformTransactionManager transactionManager;
+
+    @Autowired
     JdbcOperations jdbcOperations;
 
     @Autowired
@@ -29,8 +35,13 @@ class UsageSampleTest {
 
     @BeforeAll
     void createTable() {
-        jdbcOperations.execute("DROP TABLE IF EXISTS my_table");
-        jdbcOperations.execute("CREATE TABLE my_table (my_json JSON)");
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_NOT_SUPPORTED);
+        transactionTemplate.execute(status -> {
+            jdbcOperations.execute("DROP TABLE IF EXISTS my_table");
+            jdbcOperations.execute("CREATE TABLE my_table (my_json JSON)");
+            return null;
+        });
     }
 
     @Test
