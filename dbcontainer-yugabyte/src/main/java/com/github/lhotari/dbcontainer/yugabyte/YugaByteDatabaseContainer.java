@@ -1,9 +1,11 @@
 package com.github.lhotari.dbcontainer.yugabyte;
 
+import com.github.dockerjava.api.model.HealthCheck;
 import com.github.lhotari.dbcontainer.DatabaseContainer;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -59,7 +61,14 @@ public class YugaByteDatabaseContainer implements DatabaseContainer {
                     .withExposedPorts(YSQL_SERVICE_PORT, YCQL_SERVICE_PORT, 9000)
                     .withNetwork(network)
                     .withNetworkAliases(TSERVER_NW_ALIAS)
-                    .dependsOn(ymasterContainer);
+                    .dependsOn(ymasterContainer)
+                    .withCreateContainerCmdModifier(createContainerCmd -> {
+                        createContainerCmd.withHealthcheck(new HealthCheck()
+                                .withTest(Arrays.asList("CMD-SHELL", String.format("/home/yugabyte/postgres/bin/pg_isready -h %s -U postgres -p 5433 -t 30 && /home/yugabyte/bin/cqlsh -e 'SELECT now() FROM system.local' --no-color --connect-timeout=30", TSERVER_NW_ALIAS)))
+                                .withInterval(Duration.ofSeconds(10).toNanos())
+                                .withTimeout(Duration.ofSeconds(60).toNanos())
+                                .withRetries(5));
+                    });
             customizeContainers(ymasterContainer, tserverContainer);
             try {
                 ymasterContainer.start();
